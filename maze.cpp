@@ -1,8 +1,4 @@
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <cassert>
-#include <cstring>
+#include "maze.h"
 
 using namespace std;
 
@@ -93,3 +89,82 @@ void print_maze(char **m, int height, int width) {
   }
 }
 
+bool find_marker(const char ch, char **m, const int height, const int width, int &row, int &col) {
+  for (row = 0; row < height; ++row) {
+    for (col = 0; col < width; ++col) {
+      if (m[row][col] == ch)
+        return true;
+    }
+  }
+  row = col = -1;
+  return false;
+}
+
+bool valid_solution(const char *path, char **m, const int height, const int width) {
+  int row, col;
+  if (!find_marker('X', m, height, width, row, col) || !find_marker('>', m, height, width, row, col)) {
+    cout << "Make sure the supplied maze has both a start and an end marker ('>' and 'X' respectively)" << endl;
+    return false;
+  }
+
+  for (int i = 0; path[i] != '\0'; ++i) {
+    switch (path[i]) {
+      case 'N': --row; break;
+      case 'E': ++col; break;
+      case 'S': ++row; break;
+      case 'W': --col; break;
+    }
+
+    if (m[row][col] == '|' || m[row][col] == '+' || m[row][col] == '-')
+      return false;
+
+    if (m[row][col] == 'X')
+      return true;
+  }
+
+  return false;
+}
+
+const char *find_path(char **m, const int height, const int width, const char start, const char end) {
+  int row, col;
+  if (!find_marker(start, m, height, width, row, col)) return "no solution";
+
+  static char path[MAX_LENGTH] = {'\0'};
+  if (!next_step(m, height, width, row, col, end, path)) return "no solution";
+
+  return path;
+}
+
+bool next_step(char **m, const int height, const int width, int row, int col, const char end, char *path) {
+  char options[] =  "NESW";
+
+  if (m[row][col] == end) {
+    m[row][col] = '#';
+    *path = '\0';
+    return true;
+  }
+
+  for (int i = 0; options[i] != '\0'; ++i) {
+    int next_row = row;
+    int next_col = col;
+    switch (options[i]) {
+      case 'N': --next_row; break;
+      case 'E': ++next_col; break;
+      case 'S': ++next_row; break;
+      case 'W': --next_col; break;
+    }
+
+    if (next_row >= 0 && next_row < height && next_col >= 0 && next_col < width && m[next_row][next_col] != '|' && m[next_row][next_col] != '+' && m[next_row][next_col] != '-' && m[next_row][next_col] != '#') {
+      m[row][col] = '#';
+
+      if (next_step(m, height, width, next_row, next_col, end, path+1)) {
+        *path = options[i];
+        return true;
+      } else {
+        m[next_row][next_col] = ' ';
+      }
+    }
+  }
+
+  return false;
+}
